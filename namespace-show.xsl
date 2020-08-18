@@ -27,8 +27,18 @@
 	</xsl:template>
 	
 	<xsl:template match="/ | node() | @*">
+		<xsl:param name="path" />
+		<xsl:param name="indent" />
+		<xsl:call-template name="info">
+			<xsl:with-param name="indent" select="$indent" />
+			<xsl:with-param name="path" select="$path" />
+		</xsl:call-template>
+	</xsl:template>
+	
+	<xsl:template name="info">
 		<xsl:param name="path" select="''" />
 		<xsl:param name="indent" />
+		<xsl:param name="current" select="current()" />
 		<xsl:param name="type">
 			<xsl:apply-templates select="." mode="type"/>
 		</xsl:param>
@@ -41,8 +51,20 @@
 		</xsl:call-template>
 		<xsl:call-template name="show">
 			<xsl:with-param name="indent" select="$indent"/>
-			<xsl:with-param name="name"   select="'match'"/>
-			<xsl:with-param name="value"  select="$type"/>
+			<xsl:with-param name="name">
+				<xsl:choose>
+					<xsl:when test="$type != ''">match</xsl:when>
+					<xsl:otherwise>select</xsl:otherwise>
+				</xsl:choose>
+			</xsl:with-param>
+			<xsl:with-param name="value">
+				<xsl:choose>
+					<xsl:when test="$type != ''">
+						<xsl:value-of select="$type"/>
+					</xsl:when>
+					<xsl:otherwise>namespace::*</xsl:otherwise>
+				</xsl:choose>
+			</xsl:with-param>
 		</xsl:call-template>
 		<xsl:call-template name="show">
 			<xsl:with-param name="indent" select="$indent"/>
@@ -69,7 +91,21 @@
 			<xsl:with-param name="name"   select="'string(.)'"/>
 			<xsl:with-param name="value"  select="string(.)"/>
 		</xsl:call-template>
-
+		<xsl:if test="namespace::*">
+			<xsl:call-template name="show">
+				<xsl:with-param name="indent" select="$indent"/>
+				<xsl:with-param name="name"   select="'count(namespace::*)'"/>
+				<xsl:with-param name="value"  select="count(namespace::*)"/>
+			</xsl:call-template>
+			<xsl:value-of select="$indent" />
+			<xsl:text>| namespace::*&#10;</xsl:text>
+			<xsl:for-each select="namespace::*">
+				<xsl:call-template name="info">
+					<xsl:with-param name="indent" select="concat('|&#9;', $indent)" />
+					<xsl:with-param name="path" select="concat($path, name($current), '/')" />
+				</xsl:call-template>
+			</xsl:for-each>
+		</xsl:if>
 		<xsl:if test="@*">
 			<xsl:call-template name="show">
 				<xsl:with-param name="indent" select="$indent"/>
